@@ -169,11 +169,11 @@
         <div class="flex">
             <div class="flex-1 text-center">{weatherData?.resolvedAddress}</div>
         </div>
-        <div class="flex">
+        <div class="flex align-middle items-center">
+            <!-- <div class="flex-1"></div> -->
+            <img src="icons/failed.png" id="currenticon" class="h-0" data-type="img" alt="current-icon"/>
             <div class="flex-1"></div>
-            <img src="icons/failed.png" id="currenticon" class="w-60" data-type="img" alt="current-icon"/>
-            <div class="flex-1"></div>
-            <h2 data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text" id="currentTemp" class="text-[230px] font-bold">
+            <h2 data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text" id="currentTemp" class="text-[min(60vw,14rem)] sm:text-[min(60vw,10rem)] text-center font-bold">
                 {round(isCelsius?celsius:celsius*1.8+32, isCelsius?1:0)}<span class="text-6xl">{isCelsius ? "C" : "F"}</span>
             </h2>
             <div class="flex-1"></div>
@@ -184,18 +184,6 @@
         </div>
 
         <div style="" class="">
-            <!-- <Card.Root>
-                <Card.Header>
-                    <Card.Title>a</Card.Title>
-                    <Card.Description>b</Card.Description>
-                </Card.Header>
-                <Card.Content>
-                    <p>c</p>
-                </Card.Content>
-                <Card.Footer>
-                    <p>d</p>
-                </Card.Footer>
-            </Card.Root> -->
             <Card.Root>
                 <Card.Header class="flex flex-col items-stretch space-y-0 p-0 sm:flex-row">
                     <div class="flex flex-1 flex-col justify-center gap-0 px-6 py-0 sm:py-0">
@@ -313,9 +301,3 @@
         </Card.Root>
     </div>
 </div>
-
-<style>
-    /* img{
-        filter: invert(1);
-    } */
-</style>
