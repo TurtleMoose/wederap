@@ -11,16 +11,17 @@
     import { LineChart, BarChart, type ChartContextValue } from "layerchart";
     import { curveNatural } from "d3-shape";
     import { cubicInOut } from "svelte/easing";
-    import { ModeWatcher, toggleMode } from "mode-watcher";
+    import { ModeWatcher, mode, toggleMode } from "mode-watcher";
     import Sun from "lucide-svelte/icons/sun";
     import Moon from "lucide-svelte/icons/moon";
+    let activeMode = $mode;
 
     let celsius = $state(-273.15);
     let hours24 = $state(false);
     let celfeellike = $state(-273.15);
     let currenticon = "failed";
     let isCelsius: boolean = $state(false);
-    let isDarkMode: boolean = $state(true);
+    let isDarkMode: boolean = $state(false);
     let weatherData: any = $state(null);
     let locationOption = $state("")
     let location = "Franklin, WI";
@@ -61,7 +62,13 @@
             location = "Franklin, WI";
         }
 
-        toggleBG();
+        if(activeMode=="dark"){
+            let elems = document.querySelectorAll("img");
+            for (var i = 0; i < elems.length; i++) {
+                elems[i].style.filter= "invert(100%)";
+            }
+            isDarkMode = true;
+        }
         await fetchWeatherData();
 
         
@@ -73,31 +80,19 @@
         return Math.floor(n * Math.pow(10, d) + 0.5) / Math.pow(10, d);
     }
     function toggleBG() {
-        const lightColor = "#222222"
-        const darkColor = "#DDDDDD"
-        return;
+        toggleMode();
+        isDarkMode = !isDarkMode;
+        // return;
         //deal with later
         if (isDarkMode) {
-            let elems = document.querySelectorAll("[data-type]");
+            let elems = document.querySelectorAll("img");
             for (var i = 0; i < elems.length; i++) {
-                if (elems[i].getAttribute("data-type") == "bg") {
-                    elems[i].style.backgroundColor = elems[i].getAttribute("data-darkColor");
-                } else if (elems[i].getAttribute("data-type") == "text") {
-                    elems[i].style.color = elems[i].getAttribute("data-darkColor");
-                } else if (elems[i].getAttribute("data-type") == "img") {
-                    elems[i].style.filter = "invert(1)";
-                }
+                elems[i].style.filter= "invert(100%)";
             }
         } else {
-            let elems = document.querySelectorAll("[data-type]");
+            let elems = document.querySelectorAll("img");
             for (var i = 0; i < elems.length; i++) {
-                if (elems[i].getAttribute("data-type")?.includes("bg")) {
-                    elems[i].style.backgroundColor = elems[i].getAttribute("data-lightColor");
-                } else if (elems[i].getAttribute("data-type")?.includes("text")) {
-                    elems[i].style.color = elems[i].getAttribute("data-lightColor");
-                } else if (elems[i].getAttribute("data-type")?.includes("img")) {
-                    elems[i].style.filter = "invert(0)";
-                }
+                elems[i].style.filter= "invert(0%)";
             }
         }
     }
@@ -130,11 +125,14 @@
     let context = $state<ChartContextValue>();
 </script>
 
+
+<ModeWatcher />
+
 <title>The wederap: all the weder all the tiem</title>
-<div data-darkColor="#222222" data-lightColor="#DDDDDD" data-type="bg" style="left:0;top:0;width:100%;height:100%;position:fixed;z-index:-100;background-color:white;"></div>
+<div class="fixed h-full w-full z-[-100] light"></div>
 <div class="flex gap-4 flex-row items-center">
-    <div class="flex-1 ">
-        <!-- <Button onclick={toggleMode} variant="outline" size="icon">
+    <div class="flex-1 mt-2 mb-0 pl-2">
+        <Button onclick={toggleBG} variant="outline" size="icon">
   <Sun
     class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
   />
@@ -142,17 +140,17 @@
     class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
   />
   <span class="sr-only">Toggle theme</span>
-</Button> -->
+</Button>
     </div>
-    <h1 data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text" class="dark text-3xl font-bold flex-1 justify-center flex">the wederap</h1>
+    <h1 class="dark text-3xl font-bold flex-1 justify-center flex">the wederap</h1>
     <div class="flex-1">
-        <div class="pt-2.5 flex-1 pr-4 flex justify-end font-bold" data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text">
+        <div class="pt-2.5 flex-1 pr-4 flex justify-end font-bold" >
             F
-            <Switch data-darkColor="" data-lightColor="" data-type="switch" id="celsius" bind:checked={isCelsius}/>
+            <Switch id="celsius" bind:checked={isCelsius}/>
             C
                
             12
-            <Switch data-darkColor="" data-lightColor="" data-type="switch" id="hours" bind:checked={hours24}/>
+            <Switch id="hours" bind:checked={hours24}/>
             24
         </div>
         <!-- <div class="pt-2.5 pl-3 flex-1">
@@ -273,7 +271,7 @@
         </div>
     </div>
     <div class="flex-1">
-        <Card.Root class="h-[91vh]">
+        <Card.Root class="md:h-[91vh]">
             <Card.Header>
                 <Card.Title>a</Card.Title>
                 <Card.Description>b</Card.Description>
@@ -289,7 +287,7 @@
     <div class="flex-1">
         <Card.Root class="md:h-[91vh] wrap-break-words ">
             <Card.Header>
-                <Card.Title><div class="max-w-xs text-2xl font-bold" data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text">WEATHER ALERTS</div></Card.Title>
+                <Card.Title><div class="max-w-xs text-2xl font-bold">WEATHER ALERTS</div></Card.Title>
                 <Card.Description>For {weatherData?.resolvedAddress}</Card.Description>
             </Card.Header>
             <Card.Content>
@@ -308,7 +306,7 @@
                     </Card.Footer>
                 </Card.Root>
             {/each}
-            <div class="max-w-xs font-bold" data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text">
+            <div class="max-w-xs font-bold" >
                 {weatherData?.alerts.length == 0 ? "No Alerts :)" : ""}
             </div>
             </Card.Content>
