@@ -7,9 +7,13 @@
     import { ArrowUp, ArrowDown } from 'lucide-svelte';
     import * as Card from "$lib/components/ui/card/index.js";
     import * as Chart from "$lib/components/ui/chart/index.js";
-    import { scaleUtc } from "d3-scale";
-    import { LineChart } from "layerchart";
+    import { scaleUtc, scaleBand } from "d3-scale";
+    import { LineChart, BarChart, type ChartContextValue } from "layerchart";
     import { curveNatural } from "d3-shape";
+    import { cubicInOut } from "svelte/easing";
+    import { ModeWatcher, toggleMode } from "mode-watcher";
+    import Sun from "lucide-svelte/icons/sun";
+    import Moon from "lucide-svelte/icons/moon";
 
     let celsius = $state(-273.15);
     let hours24 = $state(false);
@@ -20,8 +24,9 @@
     let weatherData: any = $state(null);
     let locationOption = $state("")
     let location = "Franklin, WI";
+    
     const fetchWeatherData = async () => {
-        const apiKey = "TTZ6BN7P2NTXWS6L9RDH96SWC";
+        const apiKey = "KG6B4U33X4ZYSJ7W2UGEGCNEZ";
         const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${encodeURIComponent(location)}?unitGroup=metric&key=${apiKey}&contentType=json&iconSet=icons2`;
 
         try {
@@ -41,20 +46,27 @@
     };
 
     async function getthestuffagain(){
-        if(locationOption!="")
-        location = locationOption
-        await fetchWeatherData();
+        if(locationOption!=""){
+        location = locationOption}
+        let url = new URL(window.location.href);
+        window.location.replace(url.origin+url.pathname+"?l="+location)
+        // await fetchWeatherData();
     }
     let dayList = $state([])
     onMount(async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.get("l")!=undefined){
+            location = urlParams.get("l")
+        }else{
+            location = "Franklin, WI";
+        }
+
         toggleBG();
         await fetchWeatherData();
-        //weatherData?.days[0].hours[i]
+
         
         for(var i=0;i<24;i++){
-            dayList.push({ date: new Date(weatherData?.days[0].hours[i].datetimeEpoch*1000), desktop: 222*i, mobile: 150 })
-            console.log(weatherData?.days[0].hours[i].datetimeEpoch)
-            console.log(dayList[i])
+            dayList.push({ date: new Date(weatherData?.days[0].hours[i].datetimeEpoch*1000), hour: (hours24)?i+":00":"uh"+i, desktop: i, temp: round((isCelsius)?weatherData?.days[0].hours[i].temp:(weatherData?.days[0].hours[i].temp*1.8) +32, 0), precip: weatherData?.days[0].hours[i].precipprob })
         }
     });
     function round(n, d) {
@@ -90,12 +102,11 @@
         }
     }
 
-    const chartData = dayList;
+    const chartData = $state(dayList);
 
     const chartConfig = {
         views: { label: "Page Views", color: "" },
-        desktop: { label: "Desktop", color: "var(--chart-1)" },
-        mobile: { label: "Mobile", color: "var(--chart-2)" },
+        desktop: { label: "Temperature", color: "black" },
     } satisfies Chart.ChartConfig;
 
     let activeChart = $state<keyof typeof chartConfig>("desktop");
@@ -113,13 +124,27 @@
         },
     ]);
 
+  const chartConfig2 = {
+    desktop: { label: "Precipitation Chance", color: "var(--chart-1)" },
+  } satisfies Chart.ChartConfig;
+    let context = $state<ChartContextValue>();
 </script>
 
 <title>The wederap: all the weder all the tiem</title>
 <div data-darkColor="#222222" data-lightColor="#DDDDDD" data-type="bg" style="left:0;top:0;width:100%;height:100%;position:fixed;z-index:-100;background-color:white;"></div>
 <div class="flex gap-4 flex-row items-center">
-    <div class="flex-1 "></div>
-    <h1 data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text" class="text-3xl font-bold flex-1 justify-center flex">the wederap</h1>
+    <div class="flex-1 ">
+        <!-- <Button onclick={toggleMode} variant="outline" size="icon">
+  <Sun
+    class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+  />
+  <Moon
+    class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+  />
+  <span class="sr-only">Toggle theme</span>
+</Button> -->
+    </div>
+    <h1 data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text" class="dark text-3xl font-bold flex-1 justify-center flex">the wederap</h1>
     <div class="flex-1">
         <div class="pt-2.5 flex-1 pr-4 flex justify-end font-bold" data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text">
             F
@@ -137,7 +162,7 @@
         </div> -->
     </div>
 </div>
-<div class="flex gap-4 p-4 pt-2">
+<div class="flex flex-col md:flex-row gap-4 p-4">
     <div class="flex-1">
         <div class="flex">
             <Input placeholder="Location" class="w-[100%] h-10" bind:value={locationOption}/>
@@ -176,25 +201,28 @@
             <Card.Root>
                 <Card.Header class="flex flex-col items-stretch space-y-0 p-0 sm:flex-row">
                     <div class="flex flex-1 flex-col justify-center gap-0 px-6 py-0 sm:py-0">
-                    <Card.Title>Line Chart - Interactive</Card.Title>
-                    <Card.Description>Showing total visitors for the last 3 months</Card.Description>
+                    <Card.Title>Today's Weather</Card.Title>
                     </div>
                 </Card.Header>
                 <Card.Content class="px-2 sm:p-6">
-                    <Chart.Container config={chartConfig} class="aspect-auto h-[250px] w-full">
+                    <div>
+                        images go here
+                    </div>
+                    <br>
+                    <Chart.Container config={chartConfig} class="aspect-auto h-[75px] w-full">
                     <LineChart
                         data={chartData}
                         x="date"
                         xScale={scaleUtc()}
                         axis="x"
-                        series={activeSeries}
+                        series={[{key: "temp",label: chartConfig[activeChart].label,color: chartConfig[activeChart].color}]}
                         props={{
                         spline: { curve: curveNatural, motion: "tween", strokeWidth: 2 },
                         xAxis: {
                             format: (v: Date) => {
                                 let ret="";
                                 if(hours24){ret = v.getHours();ret+=":00"}else{ret = ((v.getHours()==0||v.getHours()==12)?12:v.getHours()%12).toString(); ret+=(v.getHours()>=12)?"PM":"AM"}
-                            return ret// ((v.getHours()==0||v.getHours()==12)?12:v.getHours()%12).toString()
+                            return ret;// ((v.getHours()==0||v.getHours()==12)?12:v.getHours()%12).toString()
                             },
                         },
                         highlight: { points: { r: 4 } },
@@ -204,6 +232,41 @@
                         <Chart.Tooltip hideLabel />
                         {/snippet}
                     </LineChart>
+                    </Chart.Container>
+                    <br>
+                    <Chart.Container config={chartConfig2} class="aspect-auto h-[75px] w-full">
+                    <BarChart
+                        bind:context
+                        data={chartData}
+                        xScale={scaleBand().padding(0)}
+                        x="date"
+                        axis="x"
+                        series={[{ key: "precip", label: "Precip. Chance", color: chartConfig2.desktop.color }]}
+                        props={{
+                        bars: {
+                            stroke: "none",
+                            rounded: "all",
+                            radius: 8,
+                            // use the height of the chart to animate the bars
+                            initialY: context?.height,
+                            initialHeight: 0,
+                            motion: {
+                            x: { type: "tween", duration: 500, easing: cubicInOut },
+                            width: { type: "tween", duration: 500, easing: cubicInOut },
+                            height: { type: "tween", duration: 500, easing: cubicInOut },
+                            y: { type: "tween", duration: 500, easing: cubicInOut },
+                            },
+                        },
+                        highlight: { area: { fill: "none" } },
+                        xAxis: { format: (v: Date) => {
+                            let ret=""; 
+                            if(hours24){ret = v.getHours().toString();ret+=":00";}else{ret = ((v.getHours()==0||v.getHours()==12)?12:v.getHours()%12).toString(); ret+=(v.getHours()>=12)?"PM":"AM"; } if(v.getHours()%6==0){return ret;}},
+                        }}}
+                    >
+                        {#snippet tooltip()}
+                        <Chart.Tooltip hideLabel />
+                        {/snippet}
+                    </BarChart>
                     </Chart.Container>
                 </Card.Content>
                 </Card.Root>
@@ -224,7 +287,7 @@
         </Card.Root>
     </div>
     <div class="flex-1">
-        <Card.Root class="h-[91vh] overflow-scroll">
+        <Card.Root class="md:h-[91vh] wrap-break-words ">
             <Card.Header>
                 <Card.Title><div class="max-w-xs text-2xl font-bold" data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text">WEATHER ALERTS</div></Card.Title>
                 <Card.Description>For {weatherData?.resolvedAddress}</Card.Description>
@@ -244,7 +307,6 @@
                         <p>Ends: {new Date(alert.endsEpoch * 1000)}</p>
                     </Card.Footer>
                 </Card.Root>
-                
             {/each}
             <div class="max-w-xs font-bold" data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text">
                 {weatherData?.alerts.length == 0 ? "No Alerts :)" : ""}
