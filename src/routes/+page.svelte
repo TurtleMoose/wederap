@@ -14,6 +14,7 @@
     import { ModeWatcher, mode, toggleMode } from "mode-watcher";
     import Sun from "lucide-svelte/icons/sun";
     import Moon from "lucide-svelte/icons/moon";
+    import { ScrollArea } from "$lib/components/ui/scroll-area/index.js";
     let activeMode = $mode;
 
     let celsius = $state(-273.15);
@@ -25,6 +26,7 @@
     let weatherData: any = $state(null);
     let locationOption = $state("")
     let location = "Franklin, WI";
+    let next24Hours = [];
     
     const fetchWeatherData = async () => {
         const apiKey = "KG6B4U33X4ZYSJ7W2UGEGCNEZ";
@@ -62,16 +64,30 @@
             location = "Franklin, WI";
         }
 
-        if(activeMode=="dark"){
+        
+        await fetchWeatherData();
+if(activeMode=="dark"){
             let elems = document.querySelectorAll("img");
             for (var i = 0; i < elems.length; i++) {
                 elems[i].style.filter= "invert(100%)";
             }
             isDarkMode = true;
         }
-        await fetchWeatherData();
-
         
+        //next24Hours = []
+        let NOW = new Date().getHours();
+        let tnow = []
+        for(var i=NOW;i<24;i++){
+            tnow.push(weatherData.days[0].hours[i]);
+        }
+        for(var i=0;i<NOW;i++){
+            tnow.push(weatherData.days[1].hours[i]);
+        }
+        console.log(next24Hours[0].icon)
+        for(var i=0;i<24;i++){
+            // next24Hours
+        }
+
         for(var i=0;i<24;i++){
             dayList.push({ date: new Date(weatherData?.days[0].hours[i].datetimeEpoch*1000), hour: (hours24)?i+":00":"uh"+i, desktop: i, temp: round((isCelsius)?weatherData?.days[0].hours[i].temp:(weatherData?.days[0].hours[i].temp*1.8) +32, 0), precip: weatherData?.days[0].hours[i].precipprob })
         }
@@ -91,6 +107,7 @@
             }
         } else {
             let elems = document.querySelectorAll("img");
+            console.log(elems)
             for (var i = 0; i < elems.length; i++) {
                 elems[i].style.filter= "invert(0%)";
             }
@@ -171,7 +188,7 @@
         </div>
         <div class="flex align-middle items-center">
             <!-- <div class="flex-1"></div> -->
-            <img src="icons/failed.png" id="currenticon" class="h-0" data-type="img" alt="current-icon"/>
+            <img src="icons/failed.png" id="currenticon" class="h-10" data-type="img" alt="current-icon"/>
             <div class="flex-1"></div>
             <h2 data-darkColor="#DDDDDD" data-lightColor="#222222" data-type="text" id="currentTemp" class="text-[min(60vw,14rem)] sm:text-[min(60vw,10rem)] text-center font-bold">
                 {round(isCelsius?celsius:celsius*1.8+32, isCelsius?1:0)}<span class="text-6xl">{isCelsius ? "C" : "F"}</span>
@@ -183,17 +200,24 @@
             <div class="text-3xl ml-[10%] text-center">Feels Like {round(isCelsius?celfeellike:celfeellike*1.8+32, isCelsius?1:0,)}<span class="text-2xl">{isCelsius ? "C" : "F"}</span></div>
         </div>
 
-        <div style="" class="">
-            <Card.Root>
+        <div style="" class="w-[100%]">
+            <Card.Root class="w-[100%]">
                 <Card.Header class="flex flex-col items-stretch space-y-0 p-0 sm:flex-row">
                     <div class="flex flex-1 flex-col justify-center gap-0 px-6 py-0 sm:py-0">
                     <Card.Title>Today's Weather</Card.Title>
                     </div>
                 </Card.Header>
-                <Card.Content class="px-2 sm:p-6">
-                    <div>
-                        images go here
-                    </div>
+                <Card.Content class="px-2 sm:p-6 w-[100%]">
+                    <!-- TODO: what the hell, fix this -->
+                    <ScrollArea class="w-142 rounded-md border p-5 whitespace-nowrap" orientation="horizontal">
+                        <div class="flex w-max space-x-4 m-1 p-1">
+                            {#each weatherData?.days[0].hours as hour}
+                                <div class="">
+                                    <img src={"icons/"+hour.icon+".png"} alt="I" class="h-10 select-none"/>
+                                    <img src={"wind/wind-"+Math.floor((hour.winddir+23)/45)%8+".png"} alt="W" class="h-10 mt-3 select-none"/>
+                                </div>
+                            {/each}
+                     </div>
                     <br>
                     <Chart.Container config={chartConfig} class="aspect-auto h-[75px] w-full">
                     <LineChart
@@ -201,7 +225,7 @@
                         x="date"
                         xScale={scaleUtc()}
                         axis="x"
-                        series={[{key: "temp",label: chartConfig[activeChart].label,color: chartConfig[activeChart].color}]}
+                        series={[{key: "temp",label: chartConfig2[activeChart].label,color: chartConfig2[activeChart].color}]}
                         props={{
                         spline: { curve: curveNatural, motion: "tween", strokeWidth: 2 },
                         xAxis: {
@@ -254,8 +278,11 @@
                         {/snippet}
                     </BarChart>
                     </Chart.Container>
+                       
+                    </ScrollArea>
                 </Card.Content>
                 </Card.Root>
+                
         </div>
     </div>
     <div class="flex-1">
