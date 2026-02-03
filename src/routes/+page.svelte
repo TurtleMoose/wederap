@@ -26,7 +26,7 @@
     let weatherData: any = $state(null);
     let locationOption = $state("")
     let location = "Franklin, WI";
-    let next24Hours = [];
+    let next24Hours = $state([]);
     
     const fetchWeatherData = async () => {
         const apiKey = "KG6B4U33X4ZYSJ7W2UGEGCNEZ";
@@ -46,6 +46,7 @@
             console.error("Error:", error);
         }
         document.getElementById("currenticon").src = "icons/"+currenticon+".png";
+        
     };
 
     async function getthestuffagain(){
@@ -66,6 +67,7 @@
 
         
         await fetchWeatherData();
+        await setNext24();
 if(activeMode=="dark"){
             let elems = document.querySelectorAll("img");
             for (var i = 0; i < elems.length; i++) {
@@ -74,8 +76,9 @@ if(activeMode=="dark"){
             isDarkMode = true;
         }
         
-        //next24Hours = []
-        let NOW = new Date().getHours();
+    });
+async function setNext24(){
+    let NOW = new Date().getHours();
         let tnow = []
         for(var i=NOW;i<24;i++){
             tnow.push(weatherData.days[0].hours[i]);
@@ -83,15 +86,23 @@ if(activeMode=="dark"){
         for(var i=0;i<NOW;i++){
             tnow.push(weatherData.days[1].hours[i]);
         }
-        console.log(next24Hours[0].icon)
+        
         for(var i=0;i<24;i++){
-            // next24Hours
+            next24Hours[i]= {
+                date: new Date(tnow[i].datetimeEpoch*1000), 
+                hour: (hours24)?(i+NOW)%24+":00":(i+NOW)%24, 
+                temp: round((isCelsius)?tnow[i].temp:(tnow[i].temp*1.8) +32, 0), 
+                precip: tnow[i].precipprob,
+                icon: tnow[i].icon,
+                winddir: tnow[i].winddir
+            };
         }
 
         for(var i=0;i<24;i++){
-            dayList.push({ date: new Date(weatherData?.days[0].hours[i].datetimeEpoch*1000), hour: (hours24)?i+":00":"uh"+i, desktop: i, temp: round((isCelsius)?weatherData?.days[0].hours[i].temp:(weatherData?.days[0].hours[i].temp*1.8) +32, 0), precip: weatherData?.days[0].hours[i].precipprob })
+            dayList.push(next24Hours[i])//{ date: new Date(weatherData?.days[0].hours[i].datetimeEpoch*1000), hour: (hours24)?i+":00":"uh"+i, desktop: i, temp: round((isCelsius)?weatherData?.days[0].hours[i].temp:(weatherData?.days[0].hours[i].temp*1.8) +32, 0), precip: weatherData?.days[0].hours[i].precipprob })
         }
-    });
+}
+
     function round(n, d) {
         return Math.floor(n * Math.pow(10, d) + 0.5) / Math.pow(10, d);
     }
@@ -203,15 +214,15 @@ if(activeMode=="dark"){
         <div style="" class="w-[100%]">
             <Card.Root class="w-[100%]">
                 <Card.Header class="flex flex-col items-stretch space-y-0 p-0 sm:flex-row">
-                    <div class="flex flex-1 flex-col justify-center gap-0 px-6 py-0 sm:py-0">
-                    <Card.Title>Today's Weather</Card.Title>
-                    </div>
+              
+                    <Card.Title class="flex flex-1 flex-col justify-center gap-0 px-6 py-0 sm:py-0">Next 24 Hours</Card.Title>
+           
                 </Card.Header>
                 <Card.Content class="px-2 sm:p-6 w-[100%]">
                     <!-- TODO: what the hell, fix this -->
                     <ScrollArea class="w-142 rounded-md border p-5 whitespace-nowrap" orientation="horizontal">
                         <div class="flex w-max space-x-4 m-1 p-1">
-                            {#each weatherData?.days[0].hours as hour}
+                            {#each next24Hours as hour}
                                 <div class="">
                                     <img src={"icons/"+hour.icon+".png"} alt="I" class="h-10 select-none"/>
                                     <img src={"wind/wind-"+Math.floor((hour.winddir+23)/45)%8+".png"} alt="W" class="h-10 mt-3 select-none"/>
@@ -219,7 +230,7 @@ if(activeMode=="dark"){
                             {/each}
                      </div>
                     <br>
-                    <Chart.Container config={chartConfig} class="aspect-auto h-[75px] w-full">
+                    <Chart.Container config={chartConfig} class="aspect-auto h-[75px] mr-7.5 ml-7.5">
                     <LineChart
                         data={chartData}
                         x="date"
@@ -270,7 +281,7 @@ if(activeMode=="dark"){
                         highlight: { area: { fill: "none" } },
                         xAxis: { format: (v: Date) => {
                             let ret=""; 
-                            if(hours24){ret = v.getHours().toString();ret+=":00";}else{ret = ((v.getHours()==0||v.getHours()==12)?12:v.getHours()%12).toString(); ret+=(v.getHours()>=12)?"PM":"AM"; } if(v.getHours()%6==0){return ret;}},
+                            if(hours24){ret = v.getHours().toString();ret+=":00";}else{ret = ((v.getHours()==0||v.getHours()==12)?12:v.getHours()%12).toString(); ret+=(v.getHours()>=12)?"PM":"AM"; } return ret;},
                         }}}
                     >
                         {#snippet tooltip()}
@@ -300,7 +311,7 @@ if(activeMode=="dark"){
         </Card.Root>
     </div>
     <div class="flex-1">
-        <Card.Root class="md:h-[91vh] wrap-break-words ">
+        <Card.Root class="md:h-[91vh] wrap-break-words overflow-y-scroll ">
             <Card.Header>
                 <Card.Title><div class="max-w-xs text-2xl font-bold">WEATHER ALERTS</div></Card.Title>
                 <Card.Description>For {weatherData?.resolvedAddress}</Card.Description>
