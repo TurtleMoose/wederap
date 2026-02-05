@@ -94,7 +94,8 @@ async function setNext24(){
                 temp: round((isCelsius)?tnow[i].temp:(tnow[i].temp*1.8) +32, 0), 
                 precip: tnow[i].precipprob,
                 icon: tnow[i].icon,
-                winddir: tnow[i].winddir
+                winddir: tnow[i].winddir,
+                conditions: tnow[i].conditions
             };
         }
 
@@ -161,14 +162,14 @@ async function setNext24(){
 <div class="flex gap-4 flex-row items-center">
     <div class="flex-1 mt-2 mb-0 pl-2">
         <Button onclick={toggleBG} variant="outline" size="icon">
-  <Sun
-    class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
-  />
-  <Moon
-    class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
-  />
-  <span class="sr-only">Toggle theme</span>
-</Button>
+        <Sun
+            class="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"
+        />
+        <Moon
+            class="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"
+        />
+        <span class="sr-only">Toggle theme</span>
+        </Button>
     </div>
     <h1 class="dark text-3xl font-bold flex-1 justify-center flex">the wederap</h1>
     <div class="flex-1">
@@ -189,7 +190,7 @@ async function setNext24(){
     </div>
 </div>
 <div class="flex flex-col md:flex-row gap-4 p-4">
-    <div class="flex-1">
+    <div class="flex-1 lg:w-1/3 md:w-full sm:w-full">
         <div class="flex">
             <Input placeholder="Location" class="w-[100%] h-10" bind:value={locationOption}/>
             <Button class="h-10 ml-3" data-darkColor="#DDDDDD" data-lightColor="#222222" onclick={getthestuffagain} data-type="bg">Go</Button>
@@ -213,19 +214,19 @@ async function setNext24(){
 
         <div style="" class="w-[100%]">
             <Card.Root class="w-[100%]">
-                <Card.Header class="flex flex-col items-stretch space-y-0 p-0 sm:flex-row">
+                <Card.Header class="flex flex-col items-stretch space-y-0 p-0 sm:flex-row md:flex-row lg:flex-col">
               
                     <Card.Title class="flex flex-1 flex-col justify-center gap-0 px-6 py-0 sm:py-0">Next 24 Hours</Card.Title>
            
                 </Card.Header>
                 <Card.Content class="px-2 sm:p-6 w-[100%]">
-                    <!-- TODO: what the hell, fix this -->
-                    <ScrollArea class="w-142 rounded-md border p-5 whitespace-nowrap" orientation="horizontal">
+                    <!-- TODO: what the hell, fix this  lg:w-142 sm:w-[100%]  -->
+                    <ScrollArea class="rounded-md border p-5 whitespace-nowrap" orientation="horizontal">
                         <div class="flex w-max space-x-4 m-1 p-1">
                             {#each next24Hours as hour}
                                 <div class="">
-                                    <img src={"icons/"+hour.icon+".png"} alt="I" class="h-10 select-none"/>
-                                    <img src={"wind/wind-"+Math.floor((hour.winddir+23)/45)%8+".png"} alt="W" class="h-10 mt-3 select-none"/>
+                                    <img src={"icons/"+hour.icon+".png"} title={hour.conditions} alt="I" class="h-10 select-none"/>
+                                    <img src={"wind/wind-"+Math.floor((hour.winddir+23)/45)%8+".png"} title={hour.winddir} alt="W" class="h-10 mt-3 select-none"/>
                                 </div>
                             {/each}
                      </div>
@@ -296,17 +297,39 @@ async function setNext24(){
                 
         </div>
     </div>
-    <div class="flex-1">
-        <Card.Root class="md:h-[91vh]">
+    <div class="flex-1 lg:w-1/3 md:w-full sm:w-full">
+        <Card.Root class="md:h-[91vh] overflow-y-scroll">
             <Card.Header>
-                <Card.Title>a</Card.Title>
-                <Card.Description>b</Card.Description>
+                <Card.Title>Upcoming Weather</Card.Title>
+                <!-- <Card.Description>b</Card.Description> -->
             </Card.Header>
             <Card.Content>
-                <p>c</p>
+                
+                    <div class="flex w-full space-x-4 m-1 p-0 flex-col">
+                        {#each weatherData?.days as day}
+                            <h1 class="text-1xl font-bold">{new Date(day.datetimeEpoch*1000).toLocaleDateString('en-US',{weekday: 'long', month: 'long', day: 'numeric' })}</h1>
+                            <ScrollArea class="rounded-md border p-5 m-0 mb-3 whitespace-nowrap" orientation="horizontal">
+                                <div class="flex w-max space-x-4 m-0 p-0 flex-row">
+                                    {#each day.hours as hour}
+                                        <div class="">
+                                            <p class="text-center">{
+                                                (hours24)?new Date(hour.datetimeEpoch*1000).getHours().toString()+":00":((new Date(hour.datetimeEpoch*1000).getHours()==0||new Date(hour.datetimeEpoch*1000).getHours()==12)?12:new Date(hour.datetimeEpoch*1000).getHours()%12).toString()+((new Date(hour.datetimeEpoch*1000).getHours()>=12)?"PM":"AM")
+                                                }</p>
+                                            <img src={"icons/"+hour.icon+".png"} title={hour.conditions} alt="I" class="h-10 select-none"/>
+                                            <p class="text-center">{round(isCelsius?hour.temp:hour.temp*1.8+32, isCelsius?1:0)}<span class="text-[13px]">{isCelsius ? "C" : "F"}</span></p>
+                                            <p class="text-center"><span class=' text-gray-400'>{round(isCelsius?hour.feelslike:hour.feelslike*1.8+32, isCelsius?1:0)}<span class=" text-[13px]">{isCelsius ? "C" : "F"}</span></span></p>
+
+                                            <!-- {round(isCelsius?hour.temp:hour.temp*1.8+32, isCelsius?1:0)}<span class="text-6xl">{isCelsius ? "C" : "F"}</span> -->
+                                        </div>
+                                    {/each}
+                                </div>
+                            </ScrollArea>
+                        {/each}
+                    </div>
+                
             </Card.Content>
             <Card.Footer>
-                <p>d</p>
+                <!-- <p>d</p> -->
             </Card.Footer>
         </Card.Root>
     </div>
